@@ -21,15 +21,26 @@
   --foreground: #F1F5F9;
 }
 
-* { box-sizing: border-box; padding: 0; margin: 0; }
+/* box-sizing only — never put margin/padding on * in Tailwind v4.
+   Unlayered CSS wins over @layer utilities, which kills mx-auto, px-*, py-*, etc. */
+*, *::before, *::after { box-sizing: border-box; }
 
 html, body {
-  max-width: 100vw;
-  overflow-x: hidden;
+  width: 100%;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Safe centering helper — unlayered so it can't be overridden */
+.page-wrap {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
