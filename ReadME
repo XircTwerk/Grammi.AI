@@ -1,1 +1,13 @@
-hi my name is read me hi you red me
+Grammi AI — Deploy Digital Workers. Get Results.
+
+The autonomous AI agent marketplace and execution platform.
+
+See BLUEPRINT.md for full company architecture, technical stack, monetization, and 36-month roadmap.
+See grammi-ai/ for the full Next.js platform implementation.
+
+Quick start:
+  cd grammi-ai
+  npm install
+  npm run dev
+
+Platform: http://localhost:3000
