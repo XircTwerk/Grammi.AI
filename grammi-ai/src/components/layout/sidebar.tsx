@@ -1,89 +1,91 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { cn } from "@/lib/utils";
 import {
-  Store, Bot, BarChart3, CreditCard, Code2, ShieldCheck,
-  LayoutDashboard, Zap, ChevronRight, Settings, LogOut,
+  LayoutDashboard, Bot, Library, Clock, CreditCard, Settings, LogOut, Zap, ChevronRight,
 } from "lucide-react";
 
-const NAV_ITEMS = [
-  { href: "/marketplace", label: "Marketplace", icon: Store, description: "Browse agents" },
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, description: "Live overview" },
-  { href: "/my-agents", label: "My Agents", icon: Bot, description: "Manage agents" },
-  { href: "/performance", label: "Performance", icon: BarChart3, description: "ROI & analytics" },
-  { href: "/billing", label: "Billing", icon: CreditCard, description: "Plans & usage" },
-  { href: "/api-access", label: "API", icon: Code2, description: "Developer tools" },
-  { href: "/security", label: "Security", icon: ShieldCheck, description: "Audit & trust" },
+const NAV = [
+  { href: "/dashboard",   label: "Home",          icon: LayoutDashboard, sub: "Usage & overview" },
+  { href: "/my-agents",   label: "My Agents",     icon: Bot,             sub: "Configured agents" },
+  { href: "/marketplace", label: "Agent Library",  icon: Library,         sub: "Browse & add" },
+  { href: "/performance", label: "Task History",   icon: Clock,           sub: "All runs" },
+  { href: "/billing",     label: "Billing",        icon: CreditCard,      sub: "Plan & usage" },
 ];
 
 export function Sidebar() {
-  const pathname = usePathname();
+  const path = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-60 flex flex-col border-r border-slate-700/40 bg-slate-900/80 backdrop-blur-xl z-50">
+    <aside style={{
+      position: "fixed", left: 0, top: 0, height: "100vh", width: 224,
+      background: "#0d0d0d", borderRight: "1px solid rgba(255,255,255,0.07)",
+      display: "flex", flexDirection: "column", zIndex: 50,
+    }}>
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-700/30">
-        <div className="w-9 h-9 rounded-xl gradient-brand flex items-center justify-center shadow-lg shadow-teal-900/30">
-          <Zap className="w-5 h-5 text-white" />
+      <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "18px 16px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+        <div style={{ width: 30, height: 30, borderRadius: 8, background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Zap size={15} color="#000" strokeWidth={2.5} />
         </div>
         <div>
-          <span className="text-base font-bold text-white tracking-tight">grammi</span>
-          <span className="text-base font-bold text-teal-400 tracking-tight">.ai</span>
-          <div className="text-[10px] text-slate-500 -mt-0.5">Digital Labor Platform</div>
+          <span style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>grammi</span>
+          <span style={{ fontWeight: 700, fontSize: 14, color: "#10B981" }}>.ai</span>
+          <div style={{ fontSize: 10, color: "#444", marginTop: -1 }}>Browser AI</div>
         </div>
       </div>
 
-      {/* Quick launch */}
-      <div className="px-3 py-3 border-b border-slate-700/20">
-        <Link href="/launch">
-          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl gradient-brand cursor-pointer group">
-            <Zap className="w-4 h-4 text-white" />
-            <span className="text-sm font-semibold text-white">Launch Agent</span>
-            <ChevronRight className="w-3.5 h-3.5 text-white/70 ml-auto group-hover:translate-x-0.5 transition-transform" />
-          </div>
+      {/* Start a task */}
+      <div style={{ padding: "10px 10px 4px" }}>
+        <Link href="/my-agents" style={{
+          display: "flex", alignItems: "center", gap: 8, padding: "9px 12px", borderRadius: 8,
+          background: "#10B981", textDecoration: "none",
+        }}>
+          <Zap size={14} color="#000" strokeWidth={2.5} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: "#000", flex: 1 }}>Start a task</span>
+          <ChevronRight size={13} color="#000" />
         </Link>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map(({ href, label, icon: Icon, description }) => {
-          const active = pathname === href || (href !== "/" && pathname.startsWith(href));
+      {/* Nav */}
+      <nav style={{ flex: 1, padding: "6px 8px", overflowY: "auto" }}>
+        {NAV.map(({ href, label, icon: Icon, sub }) => {
+          const active = path === href || (href !== "/dashboard" && path.startsWith(href));
           return (
-            <Link key={href} href={href}>
-              <div className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 group cursor-pointer",
-                active
-                  ? "bg-teal-500/12 border border-teal-500/20 text-teal-400"
-                  : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-200 border border-transparent"
-              )}>
-                <Icon className={cn("w-4 h-4 shrink-0", active ? "text-teal-400" : "text-slate-500 group-hover:text-slate-300")} />
-                <div className="min-w-0">
-                  <div className={cn("text-sm font-medium truncate", active ? "text-teal-300" : "")}>{label}</div>
-                  <div className="text-[10px] text-slate-600 truncate">{description}</div>
-                </div>
-                {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-400" />}
+            <Link key={href} href={href} style={{
+              display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8,
+              marginBottom: 2, textDecoration: "none",
+              background: active ? "rgba(16,185,129,0.1)" : "transparent",
+              border: `1px solid ${active ? "rgba(16,185,129,0.2)" : "transparent"}`,
+            }}>
+              <Icon size={15} color={active ? "#10B981" : "#555"} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: active ? "#10B981" : "#bbb", lineHeight: 1.3 }}>{label}</div>
+                <div style={{ fontSize: 10, color: "#444" }}>{sub}</div>
               </div>
+              {active && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#10B981", flexShrink: 0 }} />}
             </Link>
           );
         })}
       </nav>
 
-      {/* User */}
-      <div className="px-3 py-4 border-t border-slate-700/30 space-y-0.5">
-        <Link href="/settings">
-          <div className="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:bg-slate-700/30 hover:text-slate-200 cursor-pointer transition-all">
-            <Settings className="w-4 h-4" />
-            <span className="text-sm">Settings</span>
-          </div>
+      {/* Bottom */}
+      <div style={{ padding: "8px 8px 12px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+        <Link href="/security" style={{
+          display: "flex", alignItems: "center", gap: 9, padding: "7px 10px", borderRadius: 8,
+          textDecoration: "none", marginBottom: 4,
+        }}>
+          <Settings size={14} color="#444" />
+          <span style={{ fontSize: 13, color: "#555" }}>Settings</span>
         </Link>
-        <div className="flex items-center gap-3 px-3 py-3 rounded-xl">
-          <div className="w-7 h-7 rounded-full gradient-brand flex items-center justify-center text-white text-xs font-bold">A</div>
-          <div className="min-w-0 flex-1">
-            <div className="text-xs font-medium text-slate-200 truncate">Alex Morgan</div>
-            <div className="text-[10px] text-slate-500 truncate">Pro Plan</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 10px" }}>
+          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#000" }}>A</span>
           </div>
-          <LogOut className="w-3.5 h-3.5 text-slate-600 hover:text-slate-400 cursor-pointer transition-colors" />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Alex</div>
+            <div style={{ fontSize: 10, color: "#444" }}>Free plan · 7/20 tasks</div>
+          </div>
+          <LogOut size={13} color="#333" style={{ cursor: "pointer", flexShrink: 0 }} />
         </div>
       </div>
     </aside>

@@ -1,259 +1,154 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, PieChart, Pie, Cell } from "recharts";
-import { Zap, Bot, DollarSign, Activity, TrendingUp, Play, Pause, Square, RefreshCw } from "lucide-react";
-import { StatCard } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { DASHBOARD_STATS, ROI_CHART_DATA, AGENT_PERFORMANCE_DATA, CATEGORY_BREAKDOWN } from "@/lib/data/metrics";
-import { LIVE_FEED_EVENTS, MY_AGENTS } from "@/lib/data/agents";
-import { formatCurrency, formatNumber, getStatusColor } from "@/lib/utils";
+import Link from "next/link";
+import { BookOpen, FileText, DollarSign, Search, CheckCircle2, ArrowRight, Download, Zap } from "lucide-react";
 
-const FEED_TYPE_COLORS: Record<string, string> = {
-  revenue: "text-teal-400 bg-teal-500/10",
-  lead: "text-blue-400 bg-blue-500/10",
-  workflow: "text-violet-400 bg-violet-500/10",
-  alert: "text-amber-400 bg-amber-500/10",
-};
+const PLAN = { name: "Free", tasksToday: 7, taskLimitDay: 20, tasksMonth: 42, taskLimitMonth: 600 };
 
-const CUSTOM_TOOLTIP = ({ active, payload, label }: { active?: boolean; payload?: { value: number; name: string; color: string }[]; label?: string }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="glass rounded-xl p-3 text-sm border border-slate-600/40">
-      <div className="text-slate-400 mb-2 text-xs">{label}</div>
-      {payload.map(p => (
-        <div key={p.name} className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-slate-300 capitalize">{p.name}:</span>
-          <span className="text-white font-semibold">{formatCurrency(p.value)}</span>
-        </div>
-      ))}
-    </div>
-  );
-};
+const MY_AGENTS = [
+  { id: "study",   name: "Study Agent",     icon: BookOpen,   color: "#8B5CF6", tasksRun: 24, lastUsed: "2 hours ago" },
+  { id: "finance", name: "Finance Tracker", icon: DollarSign, color: "#10B981", tasksRun: 11, lastUsed: "yesterday" },
+  { id: "forms",   name: "Form Filler",     icon: FileText,   color: "#3B82F6", tasksRun: 7,  lastUsed: "3 days ago" },
+];
+
+const RECENT_TASKS = [
+  { agent: "Study Agent",     color: "#8B5CF6", task: "Summarize lecture on neural networks",      time: "2h ago",    dur: "14s" },
+  { agent: "Study Agent",     color: "#8B5CF6", task: "Generate flashcards from chapter 4",        time: "2h ago",    dur: "8s"  },
+  { agent: "Finance Tracker", color: "#10B981", task: "Categorize last month's transactions",      time: "yesterday", dur: "21s" },
+  { agent: "Form Filler",     color: "#3B82F6", task: "Fill job application at greenhouse.io",     time: "3 days ago",dur: "6s"  },
+  { agent: "Finance Tracker", color: "#10B981", task: "Identify recurring subscriptions",          time: "4 days ago",dur: "9s"  },
+  { agent: "Study Agent",     color: "#8B5CF6", task: "Quiz me on calculus derivatives",           time: "5 days ago",dur: "32s" },
+  { agent: "Finance Tracker", color: "#10B981", task: "How much did I spend on food last month?",  time: "6 days ago",dur: "7s"  },
+];
+
+const QUICK = [
+  { label: "Summarize this page",  agent: "Study Agent",    icon: BookOpen,   color: "#8B5CF6" },
+  { label: "Fill this form",       agent: "Form Filler",    icon: FileText,   color: "#3B82F6" },
+  { label: "Research this topic",  agent: "Research Agent", icon: Search,     color: "#F59E0B" },
+  { label: "Analyze my finances",  agent: "Finance Tracker",icon: DollarSign, color: "#10B981" },
+];
+
+function Tag({ color, text }: { color: string; text: string }) {
+  return <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 20, background: `${color}18`, color, border: `1px solid ${color}28` }}>{text}</span>;
+}
 
 export default function DashboardPage() {
-  const [feedEvents, setFeedEvents] = useState(LIVE_FEED_EVENTS);
-  const [tick, setTick] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTick(t => t + 1);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const budgetPct = Math.round((DASHBOARD_STATS.budgetRemaining / DASHBOARD_STATS.budgetTotal) * 100);
+  const todayPct = Math.round((PLAN.tasksToday  / PLAN.taskLimitDay)  * 100);
+  const monthPct = Math.round((PLAN.tasksMonth  / PLAN.taskLimitMonth) * 100);
 
   return (
-    <div className="p-6 space-y-6">
+    <div style={{ padding: 28, maxWidth: 900 }}>
+
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Command Dashboard</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-live-dot" />
-            <span className="text-sm text-slate-400">Live · Last updated just now</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="secondary" size="sm">
-            <RefreshCw className="w-3.5 h-3.5" />
-            Refresh
-          </Button>
-          <Button size="sm">
-            <Zap className="w-3.5 h-3.5" />
-            Launch Agent
-          </Button>
-        </div>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 4 }}>Good morning, Alex</h1>
+        <p style={{ fontSize: 14, color: "#666" }}>You&apos;ve run {PLAN.tasksMonth} tasks this month across {MY_AGENTS.length} agents.</p>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Total Revenue Generated"
-          value={formatCurrency(DASHBOARD_STATS.totalEarned)}
-          delta={`${DASHBOARD_STATS.totalEarnedDelta}% this month`}
-          positive
-          icon={<DollarSign className="w-4 h-4" />}
-        />
-        <StatCard
-          label="Active Agents"
-          value={`${DASHBOARD_STATS.activeAgents}/${DASHBOARD_STATS.totalAgents}`}
-          delta="All running healthy"
-          positive
-          icon={<Bot className="w-4 h-4" />}
-        />
-        <StatCard
-          label="Average ROI"
-          value={`${DASHBOARD_STATS.avgROI}%`}
-          delta={`${DASHBOARD_STATS.avgROIDelta}% vs last month`}
-          positive
-          icon={<TrendingUp className="w-4 h-4" />}
-        />
-        <StatCard
-          label="Tasks Executed Today"
-          value={formatNumber(DASHBOARD_STATS.tasksExecutedToday)}
-          delta={`${formatNumber(DASHBOARD_STATS.tasksExecuted)} total`}
-          positive
-          icon={<Activity className="w-4 h-4" />}
-        />
+      {/* Install banner */}
+      <div style={{ background: "#111", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 12, padding: "14px 18px", marginBottom: 22, display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: "#10B981", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Download size={17} color="#000" strokeWidth={2.5} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", marginBottom: 2 }}>Install the browser extension</p>
+          <p style={{ fontSize: 12, color: "#666" }}>The extension lets agents see your open tabs and take actions. Takes 30 seconds.</p>
+        </div>
+        <button style={{ background: "#10B981", color: "#000", fontWeight: 700, fontSize: 13, padding: "8px 14px", borderRadius: 8, cursor: "pointer", border: "none", flexShrink: 0, display: "flex", alignItems: "center", gap: 6 }}>
+          <Zap size={13} strokeWidth={2.5} /> Add to Chrome
+        </button>
       </div>
 
-      {/* Main grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* ROI Chart - 2/3 */}
-        <div className="lg:col-span-2 bg-slate-800/50 rounded-2xl border border-slate-700/40 p-5">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-base font-semibold text-white">Revenue & ROI Over Time</h2>
-              <p className="text-xs text-slate-500">Net revenue after agent costs</p>
-            </div>
-            <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1.5 text-teal-400"><span className="w-2 h-2 rounded-full bg-teal-400" />Revenue</span>
-              <span className="flex items-center gap-1.5 text-blue-400"><span className="w-2 h-2 rounded-full bg-blue-400" />Net</span>
-              <span className="flex items-center gap-1.5 text-slate-500"><span className="w-2 h-2 rounded-full bg-slate-500" />Cost</span>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={ROI_CHART_DATA}>
-              <defs>
-                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0D9488" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#0D9488" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}K`} />
-              <Tooltip content={<CUSTOM_TOOLTIP />} />
-              <Area type="monotone" dataKey="revenue" stroke="#0D9488" strokeWidth={2} fill="url(#revGrad)" name="revenue" />
-              <Area type="monotone" dataKey="net" stroke="#3B82F6" strokeWidth={2} fill="url(#netGrad)" name="net" />
-              <Area type="monotone" dataKey="cost" stroke="#64748B" strokeWidth={1.5} fill="transparent" name="cost" strokeDasharray="4 4" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+      {/* Usage + Agents */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 22 }}>
 
-        {/* Category Breakdown */}
-        <div className="bg-slate-800/50 rounded-2xl border border-slate-700/40 p-5">
-          <h2 className="text-base font-semibold text-white mb-1">Category Breakdown</h2>
-          <p className="text-xs text-slate-500 mb-4">Revenue by agent type</p>
-          <div className="flex justify-center">
-            <PieChart width={160} height={160}>
-              <Pie data={CATEGORY_BREAKDOWN} cx={80} cy={80} innerRadius={48} outerRadius={72} dataKey="value" strokeWidth={0}>
-                {CATEGORY_BREAKDOWN.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
-              </Pie>
-            </PieChart>
+        {/* Usage card */}
+        <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Usage</span>
+            <Tag color="#888" text="Free plan" />
           </div>
-          <div className="space-y-2 mt-2">
-            {CATEGORY_BREAKDOWN.map((c) => (
-              <div key={c.category} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: c.color }} />
-                  <span className="text-xs text-slate-400">{c.category}</span>
-                </div>
-                <span className="text-xs font-semibold text-white">{c.value}%</span>
+          {[
+            { label: "Today",      used: PLAN.tasksToday, limit: PLAN.taskLimitDay,   pct: todayPct, bar: "#10B981" },
+            { label: "This month", used: PLAN.tasksMonth, limit: PLAN.taskLimitMonth, pct: monthPct, bar: "#3B82F6" },
+          ].map(r => (
+            <div key={r.label} style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                <span style={{ fontSize: 12, color: "#666" }}>{r.label}</span>
+                <span style={{ fontSize: 12, color: "#888" }}>{r.used} / {r.limit} tasks</span>
               </div>
-            ))}
-          </div>
+              <div style={{ height: 5, background: "#1a1a1a", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ width: `${r.pct}%`, height: "100%", background: r.bar, borderRadius: 3 }} />
+              </div>
+            </div>
+          ))}
+          <Link href="/billing" style={{ textDecoration: "none" }}>
+            <button style={{ width: "100%", padding: 8, borderRadius: 8, fontSize: 12, fontWeight: 600, border: "1px solid rgba(16,185,129,0.3)", background: "transparent", color: "#10B981", cursor: "pointer" }}>
+              Upgrade for more tasks →
+            </button>
+          </Link>
         </div>
-      </div>
 
-      {/* My Agents + Live Feed */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* My Active Agents */}
-        <div className="bg-slate-800/50 rounded-2xl border border-slate-700/40 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-white">My Agents</h2>
-            <span className="text-xs text-slate-500">{MY_AGENTS.length} total</span>
+        {/* Active agents */}
+        <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Active agents</span>
+            <Link href="/marketplace" style={{ fontSize: 12, color: "#10B981", textDecoration: "none" }}>+ Add</Link>
           </div>
-          <div className="space-y-3">
-            {MY_AGENTS.map((agent) => (
-              <div key={agent.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/40 border border-slate-700/30 hover:border-slate-600/40 transition-all">
-                <div className={`w-2 h-2 rounded-full shrink-0 ${getStatusColor(agent.status)} ${agent.status === "live" ? "animate-pulse-glow" : ""}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-white truncate">{agent.name}</span>
-                    <span className="text-[10px] text-slate-500 shrink-0">{agent.runningDays}d</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            {MY_AGENTS.map(({ id, name, icon: Icon, color, tasksRun, lastUsed }) => (
+              <Link key={id} href="/my-agents" style={{ textDecoration: "none" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", borderRadius: 8, background: "#0d0d0d" }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 8, background: `${color}15`, border: `1px solid ${color}22`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon size={14} color={color} />
                   </div>
-                  <div className="flex items-center gap-1 mt-1">
-                    <div className="h-1 flex-1 bg-slate-700/50 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-teal-500 rounded-full"
-                        style={{ width: `${(agent.budgetUsed / agent.dailyBudget) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-slate-500 shrink-0">{Math.round((agent.budgetUsed / agent.dailyBudget) * 100)}% budget</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#ddd" }}>{name}</div>
+                    <div style={{ fontSize: 11, color: "#444" }}>{tasksRun} tasks · {lastUsed}</div>
                   </div>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#10B981", flexShrink: 0 }} />
                 </div>
-                <div className="text-right shrink-0">
-                  <div className="text-xs font-bold text-emerald-400">{formatCurrency(agent.totalEarned, true)}</div>
-                  <div className="text-[10px] text-slate-500">earned</div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  {agent.status === "live" ? (
-                    <button className="p-1.5 rounded-lg hover:bg-slate-700/40 text-slate-400 hover:text-amber-400 transition-colors cursor-pointer">
-                      <Pause className="w-3.5 h-3.5" />
-                    </button>
-                  ) : (
-                    <button className="p-1.5 rounded-lg hover:bg-slate-700/40 text-slate-400 hover:text-emerald-400 transition-colors cursor-pointer">
-                      <Play className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                  <button className="p-1.5 rounded-lg hover:bg-slate-700/40 text-slate-400 hover:text-red-400 transition-colors cursor-pointer">
-                    <Square className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Live Feed */}
-        <div className="bg-slate-800/50 rounded-2xl border border-slate-700/40 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-white">Live Activity Feed</h2>
-            <div className="flex items-center gap-1.5 text-xs text-emerald-400">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-live-dot" />
-              Live
-            </div>
-          </div>
-          <div className="space-y-2.5 max-h-80 overflow-y-auto">
-            {feedEvents.map((event, i) => (
-              <div key={event.id} className={`flex items-start gap-3 p-3 rounded-xl border border-slate-700/20 animate-fade-up`}
-                style={{ animationDelay: `${i * 50}ms` }}>
-                <div className={`text-xs px-2 py-0.5 rounded-md shrink-0 font-medium ${FEED_TYPE_COLORS[event.type] || "text-slate-400 bg-slate-700/40"}`}>
-                  {event.type}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-slate-300">{event.agent}</div>
-                  <div className="text-xs text-slate-400 truncate">{event.action}</div>
-                  <div className="text-[10px] text-emerald-400 mt-0.5">{event.result}</div>
-                </div>
-                <div className="text-[10px] text-slate-600 shrink-0">{event.time}</div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Budget Overview */}
-      <div className="bg-slate-800/50 rounded-2xl border border-slate-700/40 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-white">Daily Budget Overview</h2>
-          <span className="text-xs text-slate-500">{formatCurrency(DASHBOARD_STATS.budgetRemaining)} remaining of {formatCurrency(DASHBOARD_STATS.budgetTotal)}</span>
+      {/* Quick tasks */}
+      <div style={{ marginBottom: 22 }}>
+        <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", marginBottom: 10 }}>Quick tasks</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+          {QUICK.map(({ label, agent, icon: Icon, color }) => (
+            <Link key={label} href="/my-agents" style={{ textDecoration: "none" }}>
+              <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: "14px 12px", cursor: "pointer", textAlign: "center" }}>
+                <div style={{ width: 34, height: 34, borderRadius: 9, background: `${color}14`, border: `1px solid ${color}22`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>
+                  <Icon size={15} color={color} />
+                </div>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "#ccc", marginBottom: 3, lineHeight: 1.3 }}>{label}</p>
+                <p style={{ fontSize: 10, color: "#444" }}>{agent}</p>
+              </div>
+            </Link>
+          ))}
         </div>
-        <div className="h-3 bg-slate-900/60 rounded-full overflow-hidden mb-2">
-          <div className="h-full gradient-brand rounded-full transition-all duration-500" style={{ width: `${budgetPct}%` }} />
+      </div>
+
+      {/* Recent tasks */}
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Recent tasks</p>
+          <Link href="/performance" style={{ fontSize: 12, color: "#555", textDecoration: "none", display: "flex", alignItems: "center", gap: 3 }}>
+            View all <ArrowRight size={11} />
+          </Link>
         </div>
-        <div className="flex items-center justify-between text-xs text-slate-500">
-          <span>Used: {formatCurrency(DASHBOARD_STATS.budgetTotal - DASHBOARD_STATS.budgetRemaining)}</span>
-          <span>{budgetPct}% remaining</span>
-          <span>Limit: {formatCurrency(DASHBOARD_STATS.budgetTotal)}</span>
+        <div style={{ background: "#111", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, overflow: "hidden" }}>
+          {RECENT_TASKS.map((t, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 16px", borderBottom: i < RECENT_TASKS.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+              <CheckCircle2 size={13} color="#10B981" style={{ flexShrink: 0 }} />
+              <p style={{ flex: 1, fontSize: 13, color: "#bbb", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{t.task}</p>
+              <Tag color={t.color} text={t.agent} />
+              <span style={{ fontSize: 11, color: "#444", flexShrink: 0 }}>{t.dur}</span>
+              <span style={{ fontSize: 11, color: "#333", flexShrink: 0, minWidth: 70, textAlign: "right" }}>{t.time}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

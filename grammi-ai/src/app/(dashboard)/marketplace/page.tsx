@@ -1,340 +1,210 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
-import { Search, Star, Users, TrendingUp, Filter, ShieldCheck, Zap, Bot, ChevronRight, ExternalLink } from "lucide-react";
-import { AGENTS, type AgentCategory } from "@/lib/data/agents";
-import { getCategoryColor, getRiskBg, getPricingLabel, formatNumber } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input, Select } from "@/components/ui/input";
-import { Area, AreaChart, ResponsiveContainer } from "recharts";
+import { BookOpen, FileText, DollarSign, Search, Video, Zap, CheckCircle2, ShieldCheck, Plus } from "lucide-react";
 
-const CATEGORIES: AgentCategory[] = [
-  "Revenue Generation",
-  "Lead Acquisition",
-  "Content Amplification",
-  "Arbitrage Detection",
-  "Brand Monitoring",
-  "Research Automation",
-  "Workflow Optimization",
+const AGENTS = [
+  {
+    id: "study",
+    name: "Study Agent",
+    icon: BookOpen,
+    color: "#8B5CF6",
+    tagline: "Learn faster from anything you&apos;re reading or watching.",
+    description: "Open any webpage, article, PDF, or lecture video and Study Agent will summarize it, answer your questions, make flashcards, quiz you, or explain difficult sections in plain language. Works on Coursera, YouTube, Khan Academy, PDFs, anything.",
+    examples: ["Summarize this lecture", "Make flashcards from this chapter", "Quiz me on this material", "Explain this concept simply"],
+    needs: ["Read text on current tab", "Read video captions"],
+    category: "Learning",
+    added: true,
+  },
+  {
+    id: "forms",
+    name: "Form Filler",
+    icon: FileText,
+    color: "#3B82F6",
+    tagline: "Fill out applications, forms, and registrations automatically.",
+    description: "Set up a profile with your personal info once. Then open any web form — job application, government form, checkout page, account registration — and Form Filler reads the fields and tells you exactly what to put in each one. You review and confirm.",
+    examples: ["Fill this job application", "Complete this registration", "Fill billing info at checkout", "Fill out this government form"],
+    needs: ["Read form fields on current tab", "Your stored profile info"],
+    category: "Productivity",
+    added: true,
+  },
+  {
+    id: "finance",
+    name: "Finance Tracker",
+    icon: DollarSign,
+    color: "#10B981",
+    tagline: "Understand your money by asking questions about your accounts.",
+    description: "Open your bank, credit card, or brokerage page and ask Finance Tracker anything about your data. It reads what's on the page — not your credentials, just the displayed numbers — and answers: how much did I spend on X, what are my recurring subscriptions, where's my money going?",
+    examples: ["Categorize my transactions", "How much did I spend on food?", "Find all my subscriptions", "Compare this month to last month"],
+    needs: ["Read page content (display only, no credentials)"],
+    category: "Finance",
+    added: true,
+  },
+  {
+    id: "research",
+    name: "Research Agent",
+    icon: Search,
+    color: "#F59E0B",
+    tagline: "Research any topic across multiple sources and get a real answer.",
+    description: "Give Research Agent a question or topic. It helps you search, suggests what to look for and where, reads the pages you open, and compiles a structured summary with key points and comparisons. Better than Googling — it synthesizes instead of just linking.",
+    examples: ["Compare these mortgage lenders", "Research this company before I interview", "Summarize research on this topic", "What are the pros and cons of X?"],
+    needs: ["Read page content on current and new tabs"],
+    category: "Research",
+    added: false,
+  },
+  {
+    id: "video",
+    name: "Video Agent",
+    icon: Video,
+    color: "#EC4899",
+    tagline: "Get notes and answers from any video without watching the whole thing.",
+    description: "Point Video Agent at any YouTube, Coursera, Vimeo, or streaming page. It reads the video captions and gives you: a full summary, structured notes, key timestamps, action items, or answers to specific questions — all without you watching the whole thing.",
+    examples: ["Give me a TL;DR of this video", "Pull the key points from this lecture", "What does this documentary say about X?", "Make notes from this tutorial"],
+    needs: ["Read video captions on current tab"],
+    category: "Learning",
+    added: false,
+  },
+  {
+    id: "automation",
+    name: "Task Automator",
+    icon: Zap,
+    color: "#64748B",
+    tagline: "Handle repetitive browser tasks so you don&apos;t have to.",
+    description: "Anything you do the same way more than once — updating a spreadsheet, submitting a weekly report, ordering regular supplies, logging hours from your calendar — Task Automator helps you map the steps and execute them. You stay in control; it handles the tedium.",
+    examples: ["Fill in my weekly timesheet", "Order my usual supplies", "Log today's work from my calendar", "Submit this report"],
+    needs: ["Read and interact with current tab", "Varies by task"],
+    category: "Automation",
+    added: false,
+  },
 ];
 
-function MiniChart({ data, color = "#0D9488" }: { data: { roi: number }[]; color?: string }) {
-  return (
-    <ResponsiveContainer width="100%" height={40}>
-      <AreaChart data={data}>
-        <defs>
-          <linearGradient id={`mini-${color}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-            <stop offset="95%" stopColor={color} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <Area type="monotone" dataKey="roi" stroke={color} strokeWidth={1.5} fill={`url(#mini-${color})`} dot={false} />
-      </AreaChart>
-    </ResponsiveContainer>
-  );
-}
+const CATEGORY_COLORS: Record<string, string> = {
+  Learning: "#8B5CF6", Productivity: "#3B82F6", Finance: "#10B981",
+  Research: "#F59E0B", Automation: "#64748B",
+};
 
 export default function MarketplacePage() {
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<AgentCategory | "All">("All");
-  const [pricing, setPricing] = useState("all");
-  const [selectedAgent, setSelectedAgent] = useState<typeof AGENTS[0] | null>(null);
-
-  const filtered = AGENTS.filter(a => {
-    if (search && !a.name.toLowerCase().includes(search.toLowerCase()) && !a.description.toLowerCase().includes(search.toLowerCase())) return false;
-    if (category !== "All" && a.category !== category) return false;
-    if (pricing !== "all" && a.pricingModel !== pricing) return false;
-    return true;
-  });
+  const [selected, setSelected] = useState<typeof AGENTS[0] | null>(null);
+  const [added, setAdded] = useState<Record<string, boolean>>(
+    Object.fromEntries(AGENTS.filter(a => a.added).map(a => [a.id, true]))
+  );
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Main */}
-      <div className={`flex-1 overflow-y-auto p-6 space-y-6 ${selectedAgent ? "mr-0" : ""}`}>
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-white mb-1">Agent Marketplace</h1>
-          <p className="text-sm text-slate-400">4,200+ verified agents. Verifiable ROI. Measurable impact.</p>
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
+
+      {/* Main list */}
+      <div style={{ flex: 1, overflowY: "auto", padding: 28 }}>
+        <div style={{ maxWidth: 760, marginBottom: 24 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#fff", marginBottom: 4 }}>Agent Library</h1>
+          <p style={{ fontSize: 14, color: "#666" }}>Add agents to your extension. Each one does a specific job on whatever tab you&apos;re on.</p>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3">
-          <Input
-            icon={<Search className="w-4 h-4" />}
-            placeholder="Search agents..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-64"
-          />
-          <Select value={category} onChange={e => setCategory(e.target.value as AgentCategory | "All")}>
-            <option value="All">All Categories</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </Select>
-          <Select value={pricing} onChange={e => setPricing(e.target.value)}>
-            <option value="all">All Pricing</option>
-            <option value="subscription">Subscription</option>
-            <option value="usage">Usage-Based</option>
-            <option value="performance-share">Performance Share</option>
-          </Select>
-          <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500">
-            <Filter className="w-3.5 h-3.5" />
-            {filtered.length} results
-          </div>
-        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 760 }}>
+          {AGENTS.map(agent => {
+            const Icon = agent.icon;
+            const isAdded = added[agent.id];
+            const isSelected = selected?.id === agent.id;
 
-        {/* Category pills */}
-        <div className="flex gap-2 flex-wrap">
-          {["All", ...CATEGORIES].map(c => (
-            <button
-              key={c}
-              onClick={() => setCategory(c as AgentCategory | "All")}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer ${
-                category === c
-                  ? "gradient-brand text-white border-transparent"
-                  : "border-slate-700/40 text-slate-400 hover:border-slate-600/60 hover:text-slate-200"
-              }`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
-
-        {/* Featured banner */}
-        {category === "All" && !search && (
-          <div className="glass-teal rounded-2xl p-5 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center shrink-0">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-white">Featured this week: RevenueMaxx</div>
-              <div className="text-xs text-teal-300">18,420 deployments · 340% avg ROI · Top Earner on platform</div>
-            </div>
-            <button
-              onClick={() => setSelectedAgent(AGENTS[0])}
-              className="ml-auto flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 transition-colors cursor-pointer"
-            >
-              View <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
-        {/* Agent Grid */}
-        <div className="grid md:grid-cols-2 gap-4">
-          {filtered.map((agent) => (
-            <div
-              key={agent.id}
-              onClick={() => setSelectedAgent(selectedAgent?.id === agent.id ? null : agent)}
-              className={`bg-slate-800/50 rounded-2xl border p-5 cursor-pointer transition-all duration-200 hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-900/10 ${
-                selectedAgent?.id === agent.id ? "border-teal-500/40 shadow-lg shadow-teal-900/10" : "border-slate-700/40"
-              }`}
-            >
-              {/* Top row */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center shrink-0">
-                    <Bot className="w-5 h-5 text-white" />
+            return (
+              <div key={agent.id}
+                onClick={() => setSelected(isSelected ? null : agent)}
+                style={{
+                  background: "#111",
+                  border: `1px solid ${isSelected ? `${agent.color}40` : "rgba(255,255,255,0.07)"}`,
+                  borderRadius: 12, padding: "16px 18px",
+                  cursor: "pointer",
+                  transition: "border-color 0.15s",
+                }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  {/* Icon */}
+                  <div style={{ width: 42, height: 42, borderRadius: 11, background: `${agent.color}14`, border: `1px solid ${agent.color}25`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon size={19} color={agent.color} />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white">{agent.name}</span>
-                      {agent.developerVerified && (
-                        <ShieldCheck className="w-3.5 h-3.5 text-teal-400" aria-label="Verified developer" />
-                      )}
-                      {agent.featured && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/25 font-semibold">
-                          Featured
-                        </span>
-                      )}
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{agent.name}</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 20, background: `${CATEGORY_COLORS[agent.category]}14`, color: CATEGORY_COLORS[agent.category], border: `1px solid ${CATEGORY_COLORS[agent.category]}25` }}>
+                        {agent.category}
+                      </span>
                     </div>
-                    <div className="text-xs text-slate-400 mt-0.5">{agent.developer}</div>
+                    <p style={{ fontSize: 13, color: "#666" }} dangerouslySetInnerHTML={{ __html: agent.tagline }} />
                   </div>
-                </div>
-                <div className="flex items-center gap-1 text-amber-400 shrink-0">
-                  <Star className="w-3.5 h-3.5 fill-current" />
-                  <span className="text-xs font-bold">{agent.rating}</span>
-                  <span className="text-[10px] text-slate-500">({formatNumber(agent.reviewCount)})</span>
-                </div>
-              </div>
 
-              {/* Category + risk */}
-              <div className="flex items-center gap-2 mb-3">
-                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${getCategoryColor(agent.category)}`}>
-                  {agent.category}
-                </span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${getRiskBg(agent.riskLevel)}`}>
-                  {agent.riskLevel} risk
-                </span>
-              </div>
-
-              <p className="text-xs text-slate-400 mb-4 leading-relaxed line-clamp-2">{agent.tagline}</p>
-
-              {/* Mini chart */}
-              <div className="mb-3 -mx-1">
-                <MiniChart data={agent.historicalROI} />
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-4 gap-2 mb-4">
-                <div className="text-center p-2 rounded-lg bg-slate-900/40">
-                  <div className="text-xs font-bold text-emerald-400">{agent.avgROI}%</div>
-                  <div className="text-[9px] text-slate-500">Avg ROI</div>
+                  {/* Add / Added button */}
+                  <button
+                    onClick={e => { e.stopPropagation(); setAdded(prev => ({ ...prev, [agent.id]: !prev[agent.id] })); }}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                      cursor: "pointer", flexShrink: 0, border: "none",
+                      background: isAdded ? "rgba(16,185,129,0.12)" : "#10B981",
+                      color: isAdded ? "#10B981" : "#000",
+                      ...(isAdded ? { border: "1px solid rgba(16,185,129,0.3)" } : {}),
+                    }}>
+                    {isAdded ? <><CheckCircle2 size={13} /> Added</> : <><Plus size={13} /> Add</>}
+                  </button>
                 </div>
-                <div className="text-center p-2 rounded-lg bg-slate-900/40">
-                  <div className="text-xs font-bold text-white">{agent.successRate}%</div>
-                  <div className="text-[9px] text-slate-500">Success</div>
-                </div>
-                <div className="text-center p-2 rounded-lg bg-slate-900/40">
-                  <div className="text-xs font-bold text-white">{agent.uptime}%</div>
-                  <div className="text-[9px] text-slate-500">Uptime</div>
-                </div>
-                <div className="text-center p-2 rounded-lg bg-slate-900/40">
-                  <div className="text-xs font-bold text-white">{formatNumber(agent.deployments, true)}</div>
-                  <div className="text-[9px] text-slate-500">Deployed</div>
-                </div>
-              </div>
 
-              {/* Integrations */}
-              <div className="flex flex-wrap gap-1 mb-4">
-                {agent.integrations.slice(0, 4).map(i => (
-                  <span key={i} className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-700/40 text-slate-400 border border-slate-700/30">
-                    {i}
-                  </span>
-                ))}
-                {agent.integrations.length > 4 && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-700/40 text-slate-500">
-                    +{agent.integrations.length - 4}
-                  </span>
+                {/* Expanded examples */}
+                {isSelected && (
+                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                    <p style={{ fontSize: 13, color: "#888", lineHeight: 1.65, marginBottom: 14 }} dangerouslySetInnerHTML={{ __html: agent.description }} />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>Example commands</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                          {agent.examples.map(ex => (
+                            <div key={ex} style={{ fontSize: 12, color: "#10B981", fontFamily: "monospace", background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.12)", padding: "5px 10px", borderRadius: 6 }}>
+                              &quot;{ex}&quot;
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>What it accesses</p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                          {agent.needs.map(n => (
+                            <div key={n} style={{ display: "flex", alignItems: "flex-start", gap: 7 }}>
+                              <ShieldCheck size={13} color="#10B981" style={{ flexShrink: 0, marginTop: 1 }} />
+                              <span style={{ fontSize: 12, color: "#888" }}>{n}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
-
-              {/* Footer */}
-              <div className="flex items-center justify-between pt-3 border-t border-slate-700/30">
-                <div>
-                  <div className="text-xs font-bold text-white">{getPricingLabel(agent)}</div>
-                  <div className="text-[10px] text-slate-500">{agent.pricingModel.replace("-", " ")}</div>
-                </div>
-                <Link href="/launch">
-                  <Button size="sm" onClick={e => e.stopPropagation()}>
-                    <Zap className="w-3 h-3" />
-                    Deploy
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Agent Detail Panel */}
-      {selectedAgent && (
-        <div className="w-80 shrink-0 border-l border-slate-700/40 bg-slate-900/80 backdrop-blur-xl overflow-y-auto animate-slide-in">
-          <div className="p-5 space-y-5">
-            {/* Header */}
-            <div className="flex items-start justify-between">
-              <div className="w-12 h-12 rounded-xl gradient-brand flex items-center justify-center">
-                <Bot className="w-6 h-6 text-white" />
-              </div>
-              <button onClick={() => setSelectedAgent(null)} className="text-slate-500 hover:text-slate-300 text-xs cursor-pointer">✕ Close</button>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold text-white">{selectedAgent.name}</h3>
-              <p className="text-xs text-slate-400 mt-1">{selectedAgent.tagline}</p>
-            </div>
-
-            {/* ROI highlight */}
-            <div className="glass-teal rounded-xl p-4 text-center">
-              <div className="text-3xl font-extrabold text-teal-400">{selectedAgent.avgROI}%</div>
-              <div className="text-xs text-teal-300/70">Avg ROI in {selectedAgent.avgROITimeframe}</div>
-            </div>
-
-            {/* Full description */}
-            <div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">About</div>
-              <p className="text-xs text-slate-300 leading-relaxed">{selectedAgent.description}</p>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: "Success Rate", value: `${selectedAgent.successRate}%` },
-                { label: "Uptime", value: `${selectedAgent.uptime}%` },
-                { label: "Deployments", value: formatNumber(selectedAgent.deployments, true) },
-                { label: "Reviews", value: formatNumber(selectedAgent.reviewCount, true) },
-              ].map(({ label, value }) => (
-                <div key={label} className="p-2.5 rounded-xl bg-slate-800/50">
-                  <div className="text-xs font-bold text-white">{value}</div>
-                  <div className="text-[10px] text-slate-500">{label}</div>
+      {/* Right: summary of what you've added */}
+      <div style={{ width: 240, flexShrink: 0, borderLeft: "1px solid rgba(255,255,255,0.07)", background: "#0d0d0d", padding: 20, overflowY: "auto" }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: "#555", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 14 }}>Your agents</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {AGENTS.filter(a => added[a.id]).map(a => {
+            const Icon = a.icon;
+            return (
+              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 10px", borderRadius: 8, background: "#111", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ width: 26, height: 26, borderRadius: 7, background: `${a.color}14`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon size={12} color={a.color} />
                 </div>
-              ))}
-            </div>
-
-            {/* Historical chart */}
-            <div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">ROI History</div>
-              <ResponsiveContainer width="100%" height={80}>
-                <AreaChart data={selectedAgent.historicalROI}>
-                  <defs>
-                    <linearGradient id="detailGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0D9488" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#0D9488" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <Area type="monotone" dataKey="roi" stroke="#0D9488" strokeWidth={2} fill="url(#detailGrad)" dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Permissions */}
-            <div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Permissions Required</div>
-              <ul className="space-y-1.5">
-                {selectedAgent.permissions.map(p => (
-                  <li key={p} className="flex items-start gap-2 text-[11px] text-slate-300">
-                    <ShieldCheck className="w-3 h-3 text-teal-400 mt-0.5 shrink-0" />
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Risk */}
-            <div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Risk Disclosures</div>
-              <ul className="space-y-1.5">
-                {selectedAgent.riskDisclosures.map(r => (
-                  <li key={r} className="text-[10px] text-slate-400 leading-relaxed border-l-2 border-amber-500/30 pl-2.5">
-                    {r}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Integrations */}
-            <div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Integrations</div>
-              <div className="flex flex-wrap gap-1.5">
-                {selectedAgent.integrations.map(i => (
-                  <span key={i} className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800/60 text-slate-400 border border-slate-700/30">{i}</span>
-                ))}
+                <span style={{ fontSize: 12, color: "#ccc", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
+                <CheckCircle2 size={12} color="#10B981" />
               </div>
-            </div>
-
-            {/* CTA */}
-            <Link href="/launch">
-              <Button className="w-full" size="lg">
-                <Zap className="w-4 h-4" />
-                Deploy {selectedAgent.name}
-              </Button>
-            </Link>
-
-            <div className="text-center">
-              <div className="text-[11px] text-slate-500">Audited {selectedAgent.auditedAt} · Last updated {selectedAgent.lastUpdated}</div>
-            </div>
-          </div>
+            );
+          })}
+          {Object.values(added).filter(Boolean).length === 0 && (
+            <p style={{ fontSize: 12, color: "#444", lineHeight: 1.5 }}>Add agents from the list to enable them in your extension.</p>
+          )}
         </div>
-      )}
+        <div style={{ marginTop: 20 }}>
+          <p style={{ fontSize: 11, color: "#444", lineHeight: 1.6 }}>Changes sync to your extension automatically.</p>
+        </div>
+      </div>
     </div>
   );
 }
